@@ -4,15 +4,15 @@
 #
 # Prereqs: az login (Azure for Students), gh auth login, openssl.
 # Usage:   scripts/azure/setup.sh
-# Optional env: AZURE_REGION (eastus), AKS_RESOURCE_GROUP (hidrosense-rg),
-#               AKS_CLUSTER_NAME (hidrosense-aks), AKS_NODE_SIZE (Standard_B2ms)
+# Optional env: AZURE_REGION (chilecentral), AKS_RESOURCE_GROUP (hidrosense-rg),
+#               AKS_CLUSTER_NAME (hidrosense-aks), AKS_NODE_SIZE (Standard_B2s_v2)
 set -euo pipefail
 export MSYS_NO_PATHCONV=1   # Git Bash on Windows would mangle /subscriptions/... scopes
 
-REGION="${AZURE_REGION:-eastus}"
+REGION="${AZURE_REGION:-chilecentral}"
 RG="${AKS_RESOURCE_GROUP:-hidrosense-rg}"
 CLUSTER="${AKS_CLUSTER_NAME:-hidrosense-aks}"
-NODE_SIZE="${AKS_NODE_SIZE:-Standard_B2ms}"
+NODE_SIZE="${AKS_NODE_SIZE:-Standard_B2s_v2}"
 IDENTITY="hidrosense-github"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 ENV_FILE="$ROOT/.env.azure"

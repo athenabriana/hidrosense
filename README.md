@@ -8,8 +8,8 @@ O repositório leva a aplicação a um fluxo DevOps completo: build e testes aut
 
 | Ambiente | URL |
 |---|---|
-| Staging | http://hidrosense-staging-athenabriana.eastus.cloudapp.azure.com/swagger |
-| Produção | http://hidrosense-athenabriana.eastus.cloudapp.azure.com/health |
+| Staging | http://hidrosense-staging-athenabriana.chilecentral.cloudapp.azure.com/swagger |
+| Produção | http://hidrosense-athenabriana.chilecentral.cloudapp.azure.com/health |
 
 ```
 HidroSense/
@@ -110,7 +110,7 @@ Funcionamento:
 
 `scripts/azure/setup.sh` (Git Bash, depois de `az login` e `gh auth login`) cria:
 
-- resource group `hidrosense-rg` e cluster AKS `hidrosense-aks` (tier free, 1 nó `Standard_B2ms`, rede Azure CNI overlay com Cilium, que aplica a NetworkPolicy);
+- resource group `hidrosense-rg` e cluster AKS `hidrosense-aks` (tier free, 1 nó `Standard_B2s_v2` em Chile Central, rede Azure CNI overlay com Cilium, que aplica a NetworkPolicy);
 - identidade gerenciada `hidrosense-github` com credenciais federadas para os environments `staging` e `production` e o papel *Azure Kubernetes Service Cluster User Role* no cluster;
 - variáveis do repositório (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_REGION`, `AKS_RESOURCE_GROUP`, `AKS_CLUSTER_NAME`) e os secrets de cada environment. As senhas geradas ficam também em `.env.azure`, fora do git.
 
