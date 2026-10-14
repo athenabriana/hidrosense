@@ -50,13 +50,18 @@ echo "==> Identidade gerenciada $IDENTITY + credenciais federadas (OIDC)"
 az identity create -g "$RG" -n "$IDENTITY" -o none
 CLIENT_ID="$(az identity show -g "$RG" -n "$IDENTITY" --query clientId -o tsv)"
 PRINCIPAL_ID="$(az identity show -g "$RG" -n "$IDENTITY" --query principalId -o tsv)"
+# GitHub may send the subject as owner@id/repo@id (immutable IDs) or owner/repo; trust both.
+REPO_IDS="$(gh api "repos/$REPO" --jq '"\(.owner.login)@\(.owner.id)/\(.name)@\(.id)"')"
 for env in staging production; do
-  az identity federated-credential show -g "$RG" --identity-name "$IDENTITY" -n "github-$env" -o none 2>/dev/null && continue
-  az identity federated-credential create -g "$RG" --identity-name "$IDENTITY" \
-    -n "github-$env" \
-    --issuer https://token.actions.githubusercontent.com \
-    --subject "repo:$REPO:environment:$env" \
-    --audiences api://AzureADTokenExchange -o none
+  for pair in "github-$env:$REPO" "github-$env-ids:$REPO_IDS"; do
+    name="${pair%%:*}"
+    az identity federated-credential show -g "$RG" --identity-name "$IDENTITY" -n "$name" -o none 2>/dev/null && continue
+    az identity federated-credential create -g "$RG" --identity-name "$IDENTITY" \
+      -n "$name" \
+      --issuer https://token.actions.githubusercontent.com \
+      --subject "repo:${pair#*:}:environment:$env" \
+      --audiences api://AzureADTokenExchange -o none
+  done
 done
 
 echo "==> Permissão no cluster (Azure Kubernetes Service Cluster User Role)"
