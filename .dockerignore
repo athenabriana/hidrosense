@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/TestResults/
+.git/
+.github/
+.gitignore
+.env
+.env.*
+docs/
+scripts/
+deploy-logs/
+README.md
+*.insomnia.json
+docker-compose*.yml
