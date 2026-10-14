@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: hidrosense-staging
+
+resources:
+  - ../../base
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: staging
+    includeSelectors: false
+
+configMapGenerator:
+  - name: hidrosense-config
+    behavior: merge
+    literals:
+      - ASPNETCORE_ENVIRONMENT=Staging
+      - Logging__LogLevel__Default=Debug
+
+# Public DNS: <label>.<region>.cloudapp.azure.com
+patches:
+  - target:
+      kind: Service
+      name: hidrosense-api
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          service.beta.kubernetes.io/azure-dns-label-name: hidrosense-staging-athenabriana

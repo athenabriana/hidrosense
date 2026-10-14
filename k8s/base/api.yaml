@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hidrosense-api
+  labels:
+    app.kubernetes.io/name: hidrosense-api
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: hidrosense-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hidrosense-api
+  labels:
+    app.kubernetes.io/name: hidrosense-api
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hidrosense-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hidrosense-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: api
+          # Replaced by scripts/k8s-deploy.sh with the image built by the pipeline.
+          image: hidrosense-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: hidrosense-config
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef: { name: hidrosense-secrets, key: connection-string }
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef: { name: hidrosense-secrets, key: jwt-secret-key }
+            - name: Seed__AdminPassword
+              valueFrom:
+                secretKeyRef: { name: hidrosense-secrets, key: seed-admin-password }
+            - name: Seed__OperatorPassword
+              valueFrom:
+                secretKeyRef: { name: hidrosense-secrets, key: seed-operator-password }
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              memory: 512Mi
+          # Startup covers waiting for SQL Server plus migrations (retry loop in Program.cs).
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 20
+            failureThreshold: 3
