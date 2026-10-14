@@ -110,7 +110,7 @@ Funcionamento:
 
 `scripts/azure/setup.sh` (Git Bash, depois de `az login` e `gh auth login`) cria:
 
-- resource group `hidrosense-rg` e cluster AKS `hidrosense-aks` (tier free, 1 nó `Standard_B2s_v2` em Chile Central, rede Azure CNI overlay com Cilium, que aplica a NetworkPolicy);
+- resource group `hidrosense-rg` e cluster AKS `hidrosense-aks` (tier free, 2 nós `Standard_B2s_v2` em Chile Central, rede Azure CNI overlay com Cilium, que aplica a NetworkPolicy);
 - identidade gerenciada `hidrosense-github` com credenciais federadas para os environments `staging` e `production` e o papel *Azure Kubernetes Service Cluster User Role* no cluster;
 - variáveis do repositório (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_REGION`, `AKS_RESOURCE_GROUP`, `AKS_CLUSTER_NAME`) e os secrets de cada environment. As senhas geradas ficam também em `.env.azure`, fora do git.
 
@@ -209,11 +209,11 @@ As imagens ficam em [`docs/prints/`](docs/prints/). As execuções completas est
 | Branches `develop` (staging) e `main` (produção) | ![branches](docs/prints/00-branches.png) |
 | Pipeline completo (todos os jobs verdes) | ![pipeline](docs/prints/01-pipeline.png) |
 | Build e testes | ![testes](docs/prints/02-build-testes.png) |
-| Imagem publicada no GHCR | ![imagem](docs/prints/03-imagem-ghcr.png) |
 | Deploy em staging (AKS) + smoke test | ![staging](docs/prints/04-deploy-staging.png) |
-| Deploy em produção (AKS) | ![producao](docs/prints/05-deploy-producao.png) |
 | Staging no ar (Swagger) | ![staging-swagger](docs/prints/07-staging-swagger.png) |
-| Produção no ar (`/health`) | ![producao-health](docs/prints/08-producao-health.png) |
+| Resource group na Azure | ![resource-group](docs/prints/09-azure-resource-group.png) |
+| Cluster AKS (visão geral) | ![aks](docs/prints/10-aks-visao-geral.png) |
+| Cluster AKS (monitoramento) | ![aks-monitor](docs/prints/11-aks-monitor.png) |
 
 ## Tecnologias utilizadas
 

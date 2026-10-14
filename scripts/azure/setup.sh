@@ -34,10 +34,11 @@ if az aks show -g "$RG" -n "$CLUSTER" -o none 2>/dev/null; then
   echo "==> Cluster $CLUSTER já existe"
 else
   # Cilium enforces the NetworkPolicy that isolates SQL Server (k8s/base/networkpolicy.yaml).
-  echo "==> Criando AKS $CLUSTER (1 nó $NODE_SIZE, tier free) — leva ~5-10 min"
+  # Two nodes: AKS system pods reserve ~1 vCPU, so one 2-vCPU node can't fit both environments.
+  echo "==> Criando AKS $CLUSTER (2 nós $NODE_SIZE, tier free) — leva ~5-10 min"
   az aks create -g "$RG" -n "$CLUSTER" -l "$REGION" \
     --tier free \
-    --node-count 1 --node-vm-size "$NODE_SIZE" \
+    --node-count 2 --node-vm-size "$NODE_SIZE" \
     --network-plugin azure --network-plugin-mode overlay \
     --network-dataplane cilium --network-policy cilium \
     --no-ssh-key -o none
