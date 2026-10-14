@@ -1,0 +1,212 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_source": "hidrosense",
+  "resources": [
+    {
+      "_id": "wrk_hidrosense",
+      "_type": "workspace",
+      "name": "HidroSense API"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_hidrosense",
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "token": "",
+        "admin_password": "",
+        "operator_password": ""
+      }
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_hidrosense",
+      "name": "Auth"
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST Login (admin)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"admin\",\n  \"password\": \"{{ admin_password }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    {
+      "_id": "req_login_op",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "POST Login (operator)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"operator\",\n  \"password\": \"{{ operator_password }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    {
+      "_id": "fld_units",
+      "_type": "request_group",
+      "parentId": "wrk_hidrosense",
+      "name": "Consumer Units"
+    },
+    {
+      "_id": "req_units_list",
+      "_type": "request",
+      "parentId": "fld_units",
+      "name": "GET List (paginado)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/consumer-units?page=1&pageSize=20",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_units_create",
+      "_type": "request",
+      "parentId": "fld_units",
+      "name": "POST Create (Admin)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/consumer-units",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"code\": \"RES-200\",\n  \"name\": \"Condomínio Águas Claras\",\n  \"type\": 0,\n  \"region\": \"Zona Sul\",\n  \"idleFlowThresholdLpm\": 0.5,\n  \"monthlyBudgetLiters\": 30000\n}"
+      }
+    },
+    {
+      "_id": "fld_consumption",
+      "_type": "request_group",
+      "parentId": "wrk_hidrosense",
+      "name": "Consumption"
+    },
+    {
+      "_id": "req_reading_create",
+      "_type": "request",
+      "parentId": "fld_consumption",
+      "name": "POST Reading (dispara alerta)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/v1/consumption/readings",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"consumerUnitId\": 1,\n  \"volumeLiters\": 200,\n  \"flowRateLpm\": 6.0\n}"
+      }
+    },
+    {
+      "_id": "req_reading_list",
+      "_type": "request",
+      "parentId": "fld_consumption",
+      "name": "GET Readings (paginado + filtro)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/consumption/readings?page=1&pageSize=20&consumerUnitId=1",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        }
+      ]
+    },
+    {
+      "_id": "fld_leaks",
+      "_type": "request_group",
+      "parentId": "wrk_hidrosense",
+      "name": "Leak Alerts"
+    },
+    {
+      "_id": "req_leaks_list",
+      "_type": "request",
+      "parentId": "fld_leaks",
+      "name": "GET List (paginado + filtro)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/leak-alerts?page=1&pageSize=20&status=0",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_leaks_resolve",
+      "_type": "request",
+      "parentId": "fld_leaks",
+      "name": "PATCH Resolve (Admin)",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/v1/leak-alerts/1/resolve",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"note\": \"Vazamento reparado em campo\",\n  \"dismiss\": false\n}"
+      }
+    },
+    {
+      "_id": "fld_reports",
+      "_type": "request_group",
+      "parentId": "wrk_hidrosense",
+      "name": "Reports"
+    },
+    {
+      "_id": "req_report_impact",
+      "_type": "request",
+      "parentId": "fld_reports",
+      "name": "GET Water Impact (agregado por região)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/v1/reports/water-impact",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ token }}"
+        }
+      ]
+    }
+  ]
+}

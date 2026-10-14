@@ -1,0 +1,14 @@
+bin/
+obj/
+.vs/
+*.user
+appsettings.*.local.json
+
+# Environment files with real secrets
+.env
+.env.*
+!.env.example
+
+# Pipeline/test output
+TestResults/
+deploy-logs/
