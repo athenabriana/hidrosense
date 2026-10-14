@@ -210,6 +210,7 @@ As imagens ficam em [`docs/prints/`](docs/prints/). As execuções completas est
 | Pipeline completo (todos os jobs verdes) | ![pipeline](docs/prints/01-pipeline.png) |
 | Build e testes | ![testes](docs/prints/02-build-testes.png) |
 | Deploy em staging (AKS) + smoke test | ![staging](docs/prints/04-deploy-staging.png) |
+| Deploy em produção (AKS) + smoke test | ![producao](docs/prints/05-deploy-producao.png) |
 | Staging no ar (Swagger) | ![staging-swagger](docs/prints/07-staging-swagger.png) |
 | Resource group na Azure | ![resource-group](docs/prints/09-azure-resource-group.png) |
 | Cluster AKS (visão geral) | ![aks](docs/prints/10-aks-visao-geral.png) |
