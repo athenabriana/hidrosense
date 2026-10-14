@@ -12,3 +12,6 @@ appsettings.*.local.json
 # Pipeline/test output
 TestResults/
 deploy-logs/
+
+# Assignment document and prints are delivered in the zip, not versioned
+docs/

@@ -30,8 +30,7 @@ HidroSense/
 │   ├── k8s-deploy.sh           # deploy de um ambiente + smoke test
 │   └── smoke-test.sh           # validações pós-deploy
 ├── src/HidroSense.Api/         # código-fonte da API
-├── tests/HidroSense.Tests/     # testes de integração (xUnit + WebApplicationFactory)
-└── docs/                       # documentação (docx) e prints
+└── tests/HidroSense.Tests/     # testes de integração (xUnit + WebApplicationFactory)
 ```
 
 ## Como executar localmente com Docker
@@ -202,19 +201,15 @@ Orquestração com Docker Compose (`docker-compose.yml`), usada localmente:
 
 ## Prints do funcionamento
 
-As imagens ficam em [`docs/prints/`](docs/prints/). As execuções completas estão na aba **Actions** do repositório.
+Os prints estão no documento `HidroSense-Documentacao.docx`, entregue junto com o código, nas seções 4 e 5:
 
-| Evidência | Print |
-|---|---|
-| Branches `develop` (staging) e `main` (produção) | ![branches](docs/prints/00-branches.png) |
-| Pipeline completo (todos os jobs verdes) | ![pipeline](docs/prints/01-pipeline.png) |
-| Build e testes | ![testes](docs/prints/02-build-testes.png) |
-| Deploy em staging (AKS) + smoke test | ![staging](docs/prints/04-deploy-staging.png) |
-| Deploy em produção (AKS) + smoke test | ![producao](docs/prints/05-deploy-producao.png) |
-| Staging no ar (Swagger) | ![staging-swagger](docs/prints/07-staging-swagger.png) |
-| Resource group na Azure | ![resource-group](docs/prints/09-azure-resource-group.png) |
-| Cluster AKS (visão geral) | ![aks](docs/prints/10-aks-visao-geral.png) |
-| Cluster AKS (monitoramento) | ![aks-monitor](docs/prints/11-aks-monitor.png) |
+- branches `develop` (staging) e `main` (produção);
+- pipeline completo e job de build e testes;
+- deploy em staging e em produção no AKS, com smoke test;
+- Swagger de staging no ar;
+- resource group e cluster AKS na Azure.
+
+As execuções completas estão na aba **Actions** do repositório.
 
 ## Tecnologias utilizadas
 
