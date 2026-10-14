@@ -1,0 +1,96 @@
+# Reusable deploy to Azure AKS: OIDC login (no stored cloud credentials), applies the
+# environment's kustomize overlay and gates on the smoke test against the public IP.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      image:
+        type: string
+        required: true
+
+jobs:
+  deploy:
+    name: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.deploy.outputs.public_url }}
+    # One deploy per environment at a time (develop and main both target staging).
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      NAMESPACE: hidrosense-${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Login Azure (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Conectar ao cluster AKS
+        uses: azure/aks-set-context@v5
+        with:
+          resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_CLUSTER_NAME }}
+
+      - name: Cluster
+        run: |
+          kubectl cluster-info
+          kubectl get nodes -o wide
+
+      - name: Deploy + smoke test
+        id: deploy
+        env:
+          API_IMAGE: ${{ inputs.image }}
+          AZURE_REGION: ${{ vars.AZURE_REGION }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+          SEED_OPERATOR_PASSWORD: ${{ secrets.SEED_OPERATOR_PASSWORD }}
+        run: |
+          for v in DB_PASSWORD JWT_SECRET_KEY SEED_ADMIN_PASSWORD SEED_OPERATOR_PASSWORD; do
+            [ -n "${!v}" ] || { echo "::error::Secret $v ausente no environment ${{ inputs.environment }} (rode scripts/azure/setup.sh)"; exit 1; }
+          done
+          chmod +x scripts/*.sh
+          set -o pipefail
+          scripts/k8s-deploy.sh ${{ inputs.environment }} | tee deploy.log
+
+      - name: Evidências do ambiente
+        if: always()
+        run: |
+          mkdir -p deploy-logs
+          cp deploy.log deploy-logs/ 2>/dev/null || true
+          kubectl -n "$NAMESPACE" get all,pvc,configmap,networkpolicy -o wide > deploy-logs/resources.txt 2>&1 || true
+          kubectl -n "$NAMESPACE" describe deploy,statefulset > deploy-logs/describe.txt 2>&1 || true
+          kubectl -n "$NAMESPACE" logs -l app.kubernetes.io/name=hidrosense-api --tail=200 --prefix > deploy-logs/api.log 2>&1 || true
+          kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp > deploy-logs/events.txt 2>&1 || true
+          url="${{ steps.deploy.outputs.public_url }}"
+          # Swagger is only enabled in Staging (Program.cs).
+          if [ "${{ inputs.environment }}" = "staging" ]; then path=/swagger; else path=/health; fi
+          {
+            echo "### Deploy ${{ inputs.environment }} (AKS \`${{ vars.AKS_CLUSTER_NAME }}\` / namespace \`$NAMESPACE\`)"
+            echo "- Imagem: \`${{ inputs.image }}\`"
+            [ -n "$url" ] && echo "- URL: $url$path"
+            echo '```'
+            kubectl -n "$NAMESPACE" get deploy,statefulset,pods,svc,pvc 2>&1 || true
+            echo
+            grep -E '==>|\[OK\]|\[FAIL\]' deploy.log 2>/dev/null || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: deploy-${{ inputs.environment }}-logs
+          path: deploy-logs/
