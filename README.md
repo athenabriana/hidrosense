@@ -212,7 +212,6 @@ As imagens ficam em [`docs/prints/`](docs/prints/). As execuções completas est
 | Imagem publicada no GHCR | ![imagem](docs/prints/03-imagem-ghcr.png) |
 | Deploy em staging (AKS) + smoke test | ![staging](docs/prints/04-deploy-staging.png) |
 | Deploy em produção (AKS) | ![producao](docs/prints/05-deploy-producao.png) |
-| Recursos dos dois namespaces (`kubectl get`) | ![pods](docs/prints/06-kubectl-ambientes.png) |
 | Staging no ar (Swagger) | ![staging-swagger](docs/prints/07-staging-swagger.png) |
 | Produção no ar (`/health`) | ![producao-health](docs/prints/08-producao-health.png) |
 

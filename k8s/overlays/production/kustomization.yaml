@@ -29,7 +29,8 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/resources
         value:
-          requests: { cpu: 250m, memory: 256Mi }
+          # Low CPU request: both environments share a single 2-vCPU node.
+          requests: { cpu: 100m, memory: 256Mi }
           limits: { cpu: "1", memory: 512Mi }
   # Public DNS: <label>.<region>.cloudapp.azure.com
   - target:
