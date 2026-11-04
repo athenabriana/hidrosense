@@ -128,7 +128,10 @@ public class CommonSteps {
             return;
         }
         Response response = ctx.response();
-        String evidence = "HTTP " + response.statusCode() + System.lineSeparator() + response.asPrettyString();
+        // Reports are published as CI artifacts: keep bearer tokens out of them.
+        String body = response.asPrettyString()
+                .replaceAll("(\"accessToken\"\\s*:\\s*\")[^\"]+\"", "$1<omitido>\"");
+        String evidence = "HTTP " + response.statusCode() + System.lineSeparator() + body;
         scenario.attach(evidence, "text/plain", "Resposta da API");
     }
 }
