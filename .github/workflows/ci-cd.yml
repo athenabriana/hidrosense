@@ -61,9 +61,67 @@ jobs:
           name: test-results
           path: TestResults/
 
+  bdd-tests:
+    name: Testes BDD de API (Cucumber)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Throwaway secrets for this run only: generated, masked in the logs, gone with the runner.
+      - name: Gerar .env efêmero
+        run: |
+          rnd() { openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 20; }
+          db="Db1!$(rnd)"; jwt="$(rnd)$(rnd)"; adm="Adm1!$(rnd)"; op="Op1!$(rnd)"
+          for s in "$db" "$jwt" "$adm" "$op"; do echo "::add-mask::$s"; done
+          {
+            echo "ASPNETCORE_ENVIRONMENT=Development"
+            echo "DB_PASSWORD=$db"
+            echo "JWT_SECRET_KEY=$jwt"
+            echo "SEED_ADMIN_PASSWORD=$adm"
+            echo "SEED_OPERATOR_PASSWORD=$op"
+          } > .env
+
+      - name: Subir API e SQL Server (docker compose)
+        run: docker compose up -d --build --wait api
+
+      - name: Rodar a suíte BDD
+        run: docker compose -f docker-compose.yml -f docker-compose.bdd.yml run --rm --build bdd-tests
+
+      - name: Resumo dos testes BDD
+        if: always()
+        run: |
+          xml=bdd-tests/target/cucumber-report/cucumber-junit.xml
+          [ -f "$xml" ] || exit 0
+          suite=$(grep -o '<testsuite [^>]*>' "$xml" | head -n1)
+          get() { echo "$suite" | sed -n "s/.* $1=\"\([0-9]*\)\".*/\1/p"; }
+          total=$(get tests); failed=$(( $(get failures) + $(get errors) )); skipped=$(get skipped)
+          {
+            echo "### Testes BDD de API (Cucumber + RestAssured + JSON Schema)"
+            echo "| Cenários | Aprovados | Falhas | Ignorados |"
+            echo "|---|---|---|---|"
+            echo "| $total | $(( total - failed - skipped )) | $failed | $skipped |"
+            echo
+            echo "Relatório HTML completo no artefato \`bdd-report\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Logs da API
+        if: failure()
+        run: docker compose logs api --tail 200
+
+      - name: Publicar relatório Cucumber
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: bdd-report
+          path: bdd-tests/target/cucumber-report/
+
+      - name: Derrubar a stack
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.bdd.yml down -v
+
   docker:
     name: Imagem Docker
-    needs: build-test
+    needs: [build-test, bdd-tests]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:

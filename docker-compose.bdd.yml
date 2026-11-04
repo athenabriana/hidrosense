@@ -1,0 +1,20 @@
+# BDD test runner. Used on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.bdd.yml run --rm --build bdd-tests
+# The suite reads the same .env as the API, so the seeded passwords never leave that file.
+services:
+  bdd-tests:
+    image: hidrosense-bdd-tests:local
+    build:
+      context: ./bdd-tests
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_BASE_URL: http://api:8080
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?Defina SEED_ADMIN_PASSWORD no .env}
+      SEED_OPERATOR_PASSWORD: ${SEED_OPERATOR_PASSWORD:?Defina SEED_OPERATOR_PASSWORD no .env}
+    volumes:
+      # Cucumber HTML/JSON/JUnit reports land on the host at bdd-tests/target/cucumber-report.
+      - ./bdd-tests/target:/tests/target
+    networks:
+      - frontend

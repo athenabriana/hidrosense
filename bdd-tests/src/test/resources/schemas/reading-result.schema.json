@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ConsumptionReadingResultViewModel (POST /api/v1/consumption/readings)",
+  "type": "object",
+  "required": ["readingId", "consumerUnitId", "readingTimeUtc", "volumeLiters", "flowRateLpm", "leakDetected", "leakAlertId", "leakSeverity"],
+  "additionalProperties": false,
+  "properties": {
+    "readingId": { "type": "integer", "minimum": 1 },
+    "consumerUnitId": { "type": "integer", "minimum": 1 },
+    "readingTimeUtc": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" },
+    "volumeLiters": { "type": "number", "minimum": 0 },
+    "flowRateLpm": { "type": "number", "minimum": 0 },
+    "leakDetected": { "type": "boolean" },
+    "leakAlertId": { "type": ["integer", "null"], "minimum": 1 },
+    "leakSeverity": { "type": ["string", "null"], "enum": ["Low", "Medium", "High", "Critical", null] }
+  }
+}

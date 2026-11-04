@@ -15,3 +15,6 @@ deploy-logs/
 
 # Assignment document and prints are delivered in the zip, not versioned
 docs/
+
+# BDD suite output (Maven target, Cucumber reports)
+bdd-tests/target/
