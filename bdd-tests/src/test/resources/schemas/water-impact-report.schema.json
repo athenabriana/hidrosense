@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "WaterImpactReportViewModel (GET /api/v1/reports/water-impact)",
+  "type": "object",
+  "required": ["fromUtc", "toUtc", "totalConsumedLiters", "totalEstimatedWasteLiters", "overallWastePercent", "regions"],
+  "additionalProperties": false,
+  "properties": {
+    "fromUtc": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" },
+    "toUtc": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" },
+    "totalConsumedLiters": { "type": "number", "minimum": 0 },
+    "totalEstimatedWasteLiters": { "type": "number", "minimum": 0 },
+    "overallWastePercent": { "type": "number", "minimum": 0 },
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["region", "consumerUnits", "totalConsumedLiters", "totalBudgetLiters", "budgetUsagePercent", "openLeakAlerts", "estimatedWasteLiters", "mitigationPlan"],
+        "additionalProperties": false,
+        "properties": {
+          "region": { "type": "string", "minLength": 1 },
+          "consumerUnits": { "type": "integer", "minimum": 1 },
+          "totalConsumedLiters": { "type": "number", "minimum": 0 },
+          "totalBudgetLiters": { "type": "number", "minimum": 0 },
+          "budgetUsagePercent": { "type": "number", "minimum": 0 },
+          "openLeakAlerts": { "type": "integer", "minimum": 0 },
+          "estimatedWasteLiters": { "type": "number", "minimum": 0 },
+          "mitigationPlan": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

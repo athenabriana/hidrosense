@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "PagedResult<ConsumptionReadingViewModel> (GET /api/v1/consumption/readings)",
+  "type": "object",
+  "required": ["items", "page", "pageSize", "totalItems", "totalPages", "hasNext", "hasPrevious"],
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "consumerUnitId", "consumerUnitCode", "readingTimeUtc", "volumeLiters", "flowRateLpm"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "consumerUnitId": { "type": "integer", "minimum": 1 },
+          "consumerUnitCode": { "type": "string", "minLength": 1 },
+          "readingTimeUtc": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" },
+          "volumeLiters": { "type": "number", "minimum": 0 },
+          "flowRateLpm": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "page": { "type": "integer", "minimum": 1 },
+    "pageSize": { "type": "integer", "minimum": 1, "maximum": 100 },
+    "totalItems": { "type": "integer", "minimum": 0 },
+    "totalPages": { "type": "integer", "minimum": 0 },
+    "hasNext": { "type": "boolean" },
+    "hasPrevious": { "type": "boolean" }
+  }
+}

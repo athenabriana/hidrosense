@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ProblemDetails (RFC 7807) emitido pelo ExceptionHandlingMiddleware",
+  "type": "object",
+  "required": ["title", "status", "detail", "instance"],
+  "properties": {
+    "type": { "type": ["string", "null"] },
+    "title": { "type": "string", "enum": ["Validation failed", "Resource not found", "Business rule violation", "Unexpected error"] },
+    "status": { "type": "integer", "minimum": 400, "maximum": 599 },
+    "detail": { "type": "string", "minLength": 1 },
+    "instance": { "type": "string", "pattern": "^/" }
+  }
+}
