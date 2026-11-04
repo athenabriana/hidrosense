@@ -30,7 +30,117 @@ HidroSense/
 │   ├── k8s-deploy.sh           # deploy de um ambiente + smoke test
 │   └── smoke-test.sh           # validações pós-deploy
 ├── src/HidroSense.Api/         # código-fonte da API
-└── tests/HidroSense.Tests/     # testes de integração (xUnit + WebApplicationFactory)
+├── tests/HidroSense.Tests/     # testes de integração (xUnit + WebApplicationFactory)
+├── bdd-tests/                  # testes BDD de API (Java: Cucumber + RestAssured + JSON Schema)
+│   ├── Dockerfile              # imagem do executor (Maven + JDK 21)
+│   └── src/test/
+│       ├── java/.../steps/     # step definitions
+│       ├── java/.../support/   # contexto do cenário, payloads e configuração
+│       └── resources/
+│           ├── features/       # cenários em Gherkin (português)
+│           └── schemas/        # contratos JSON Schema das respostas
+├── docker-compose.bdd.yml      # serviço bdd-tests sobre a stack do docker-compose.yml
+└── scripts/run-bdd-tests.*     # execução da suíte BDD em um comando (bash e PowerShell)
+```
+
+## Testes automatizados BDD
+
+A API é em C#; os testes BDD foram escritos em **Java com Cucumber**, como o enunciado permite, e rodam **contra a API real** (container da API + SQL Server do `docker-compose.yml`), sem mocks. Cada requisição passa pela rede, pela autenticação JWT, pela validação e pelo banco, como em produção.
+
+| Ferramenta | Uso |
+|---|---|
+| Cucumber 7 (Gherkin em português, `# language: pt`) | cenários de comportamento |
+| RestAssured 5 | chamadas HTTP, validação de status code e de corpo JSON |
+| `json-schema-validator` (RestAssured) | testes de contrato com JSON Schema (draft-04) |
+| JUnit Platform + cucumber-picocontainer | execução e estado compartilhado por cenário |
+| Docker / Docker Compose | stack da API e executor dos testes |
+| GitHub Actions | execução no pipeline (job `bdd-tests`) |
+
+### Cenários e cobertura
+
+36 cenários em 6 features, cada uma com caminhos felizes (`@positivo`) e falhas (`@negativo`). As tags `@esg`, `@ambiental` e `@governanca` marcam o pilar ESG que cada cenário protege.
+
+| Feature | Rotas | O que valida |
+|---|---|---|
+| `00_saude_da_api` | `GET /health` | health check responde `Healthy` com o banco no ar |
+| `01_autenticacao` | `POST /api/v1/auth/login` | token JWT por perfil (Admin, Operator); senha errada e usuário inexistente → 401; campos vazios → 400 |
+| `02_unidades_consumidoras` | `GET` e `POST /api/v1/consumer-units` | paginação, filtro por região, cadastro (201), código duplicado (409), operador sem permissão (403), sem token (401), 5 validações de campo (400) |
+| `03_leituras_e_deteccao_de_vazamento` | `POST` e `GET /api/v1/consumption/readings` | leitura normal sem alerta; vazão acima da ociosa gera alerta `Low`/`Medium`/`High`/`Critical` conforme a proporção; histórico por unidade; unidade inexistente (404); volume negativo (400); sem token (401) |
+| `04_alertas_de_vazamento` | `GET /api/v1/leak-alerts`, `PATCH /api/v1/leak-alerts/{id}/resolve` | listagem de abertos por região; resolução registra **quem** resolveu (`resolvedBy`); descarte de falso positivo; resolver de novo (409); alerta inexistente (404); operador (403) |
+| `05_relatorio_de_impacto_hidrico` | `GET /api/v1/reports/water-impact` | relatório por região; vazamento aberto entra com 480 L de desperdício estimado e plano de mitigação; alerta resolvido sai do relatório; sem token (401) |
+
+Exemplo (`03_leituras_e_deteccao_de_vazamento.feature`):
+
+```gherkin
+Esquema do Cenário: Vazão acima da vazão ociosa gera alerta com severidade proporcional
+  Quando o hidrômetro envia uma leitura de 300 litros com vazão de <vazao> litros por minuto
+  Então o status da resposta deve ser 201
+  E a resposta deve obedecer ao contrato "reading-result.schema.json"
+  E o campo "leakDetected" deve ser verdadeiro
+  E o campo "leakSeverity" deve ser "<severidade>"
+
+  Exemplos: vazão em relação à vazão ociosa de 2.0 L/min
+    | vazao | severidade |
+    | 2.5   | Low        |
+    | 4.0   | Medium     |
+    | 6.0   | High       |
+    | 10.0  | Critical   |
+```
+
+Cada resposta de sucesso e de erro é validada contra um contrato em `bdd-tests/src/test/resources/schemas/`: `token`, `consumer-unit`, `consumer-unit-page`, `reading-result`, `reading-page`, `leak-alert`, `leak-alert-page`, `water-impact-report`, `problem` (erros 401/404/409 no formato RFC 7807) e `validation-problem` (erros 400). Os contratos de sucesso usam `additionalProperties: false`: um campo novo ou removido na API quebra o teste.
+
+Isolamento: cada cenário cria os próprios dados (unidade com código e região únicos, gerados por UUID), então a suíte roda quantas vezes for preciso sobre o mesmo banco, sem limpeza e sem depender de ordem.
+
+Segredos: nenhuma senha fica no código dos testes. A suíte lê `SEED_ADMIN_PASSWORD` e `SEED_OPERATOR_PASSWORD` do ambiente, o mesmo `.env` que sobe a API. No CI, essas senhas são geradas a cada execução e mascaradas nos logs.
+
+### Como executar
+
+Pré-requisito: Docker com Compose v2.24+. Não é preciso ter Java nem Maven instalados.
+
+Um comando (sobe API + banco, roda a suíte e deixa o relatório em `bdd-tests/target/cucumber-report/index.html`; se não houver `.env`, gera um com senhas aleatórias):
+
+```bash
+scripts/run-bdd-tests.sh
+```
+
+No Windows (PowerShell):
+
+```powershell
+./scripts/run-bdd-tests.ps1
+```
+
+Só uma parte dos cenários, por tag:
+
+```bash
+scripts/run-bdd-tests.sh -Dcucumber.filter.tags="@esg and @negativo"
+```
+
+Passo a passo, sem o script (com o `.env` já preenchido):
+
+```bash
+docker compose up -d --build --wait api
+```
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.bdd.yml run --rm --build bdd-tests
+```
+
+Contra uma API já rodando, com Java 21 e Maven na máquina:
+
+```bash
+cd bdd-tests
+API_BASE_URL=http://localhost:8080 SEED_ADMIN_PASSWORD='<senha>' SEED_OPERATOR_PASSWORD='<senha>' mvn test
+```
+
+Relatórios gerados em `bdd-tests/target/cucumber-report/`: `index.html` (relatório Cucumber com a resposta da API anexada a cada cenário), `cucumber.json` e `cucumber-junit.xml`.
+
+### No pipeline
+
+O job `bdd-tests` do `ci-cd.yml` roda em todo push e pull request para `develop` e `main`: gera um `.env` efêmero, sobe a stack com `docker compose`, executa a suíte no container `bdd-tests`, escreve o resumo (cenários aprovados e com falha) no painel do run e publica o relatório HTML no artefato `bdd-report`. A imagem Docker e os deploys só seguem se os testes unitários (`build-test`) **e** os BDD passarem.
+
+```
+pull request ─► Build ─► Testes xUnit ┐
+                         Testes BDD  ─┴─► (push) Imagem Docker ─► Deploy staging ─► Deploy produção
 ```
 
 ## Como executar localmente com Docker
@@ -216,6 +326,7 @@ As execuções completas estão na aba **Actions** do repositório.
 - **Aplicação:** C# 12, .NET 8, ASP.NET Core Web API, Entity Framework Core 8 (SQL Server), FluentValidation, JWT Bearer, Swagger (Swashbuckle)
 - **Banco de dados:** Microsoft SQL Server 2022
 - **Testes:** xUnit, Microsoft.AspNetCore.Mvc.Testing (WebApplicationFactory), EF Core InMemory, coverlet
+- **Testes BDD de API:** Java 21, Maven, Cucumber 7 (Gherkin), RestAssured 5, JSON Schema (json-schema-validator), JUnit Platform
 - **Containers:** Docker (multi-stage), Docker Compose v2
 - **Orquestração:** Kubernetes, kustomize, Azure Kubernetes Service (AKS)
 - **Nuvem:** Microsoft Azure (AKS, Load Balancer, Managed Disks, Managed Identity), Azure CLI
@@ -233,3 +344,7 @@ As execuções completas estão na aba **Actions** do repositório.
 | README.md com instruções e prints | ☐ |
 | Documentação técnica com evidências (PDF ou PPT) | ☐ |
 | Deploy realizado nos ambientes staging e produção | ☐ |
+| Testes BDD com Gherkin (mínimo 3 cenários, positivos e negativos) | ☐ |
+| Testes de API em todas as rotas: status code, corpo JSON e contrato JSON Schema | ☐ |
+| Execução dos testes BDD documentada (local e CI) | ☐ |
+| Documento com cenários Gherkin, prints de configuração e evidências de execução | ☐ |
